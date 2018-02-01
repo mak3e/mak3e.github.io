@@ -1,0 +1,65 @@
+<html>
+    <head>
+        <title>split</title>
+        <style>
+            body{
+                background-color: black;
+                margin: 0!important;
+                width: 100vw;
+                height: 100vh;
+            }
+            div{
+                display: inline-block;
+                width: 100%;
+                height: 100%;
+            }
+            .v{
+                width: 50%;
+            }
+            .h{
+                height: 50%;
+            }
+        </style>
+        <script>
+            function split(event){
+                var element = event.target;
+                var nextClass = getNextClass(element.getAttribute("class"));
+                var div1 = newDiv(nextClass, getRandomColor());
+                var div2 = newDiv(nextClass, getRandomColor());
+                element.appendChild(div1);
+                element.appendChild(div2);
+                element.setAttribute("onmouseover", "");
+            }
+
+            function getRandomColor() {
+                var letters = '0123456789ABCDEF';
+                var color = '#';
+                for (var i = 0; i < 6; i++) {
+                    color += letters[Math.floor(Math.random() * 16)];
+                }
+                return color;
+            }
+
+            function getNextClass(oldClass){
+                if(oldClass=="h"){
+                    return "v"
+                } else {
+                    return "h"
+                }
+            }
+
+            function newDiv(nextClass, color){
+                var div = document.createElement("div");
+                div.setAttribute("class", nextClass);
+                div.setAttribute("onmouseover", "split(event)");
+                div.style.backgroundColor=color;
+                return div
+            }
+        </script>
+    </head>
+    <body>
+        <h1></h1>
+        <div onmouseover="split(event)">
+        </div>
+    </body>
+</html>
