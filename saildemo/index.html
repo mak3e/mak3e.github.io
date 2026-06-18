@@ -21,6 +21,10 @@
   #hud kbd { display:inline-block; padding:1px 6px; margin:0 2px; border-radius:3px;
              background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.25);
              font:600 12px/1 ui-monospace,SFMono-Regular,Menlo,monospace; }
+  #help { display:none; }
+  #help kbd { display:inline-block; padding:1px 6px; margin:0 2px; border-radius:3px;
+              background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.25);
+              font:600 12px/1 ui-monospace,SFMono-Regular,Menlo,monospace; }
   .btn { display:none; position:fixed; width:56px; height:56px; border-radius:8px;
          background:rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.25);
          color:#fff; font:600 22px/56px -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;
@@ -29,37 +33,62 @@
   .btn:active, .btn.pressed { background:rgba(255,255,255,.30); }
   @media (hover: none) and (pointer: coarse) {
     .btn  { display:block; background:rgba(255,255,255,.16); }
-    #btnQ { top:18px; right:18px; }
-    #btnW { left:18px; bottom:90px; }
-    #btnS { left:18px; bottom:18px; }
+    #btnQ { top:18px; left:18px; }
+    #btnM { top:90px; left:18px; }
+    #btnHelp { top:162px; left:18px; }
+    #btnW { left:18px; bottom:18px; }
+    #btnS { left:90px; bottom:18px; }
     #btnA { right:90px; bottom:18px; }
     #btnD { right:18px; bottom:18px; }
     #btnFS { top:calc(env(safe-area-inset-top,0px) + 18px);
-             left:calc(env(safe-area-inset-left,0px) + 18px); }
+             right:calc(env(safe-area-inset-right,0px) + 18px); }
+    #hud  { bottom:auto; top:14px; }
+    #hud-keys { display:none; }
+    #help { position:fixed; left:18px; top:230px;
+            font:14px/1.6 -apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif;
+            color:#fff; text-shadow:0 1px 3px rgba(0,0,0,.6); letter-spacing:.04em;
+            background:rgba(0,0,0,.45); border-radius:8px; padding:10px 14px;
+            pointer-events:none; user-select:none; max-width:60vw; }
+    #help.show { display:block; }
   }
   @media (hover: none) and (pointer: coarse) and (orientation: portrait) {
     .btn  { width:48px; height:48px; border-radius:9px;
             font:600 18px/48px -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif; }
     #btnQ { top:calc(env(safe-area-inset-top,0px) + 16px);
-            right:calc(env(safe-area-inset-right,0px) + 16px); }
-    #btnW { left:calc(env(safe-area-inset-left,0px) + 16px); bottom:calc(env(safe-area-inset-bottom,0px) + 108px); }
-    #btnS { left:calc(env(safe-area-inset-left,0px) + 16px); bottom:calc(env(safe-area-inset-bottom,0px) + 50px); }
-    #btnA { right:calc(env(safe-area-inset-right,0px) + 74px); bottom:calc(env(safe-area-inset-bottom,0px) + 50px); }
-    #btnD { right:calc(env(safe-area-inset-right,0px) + 16px); bottom:calc(env(safe-area-inset-bottom,0px) + 50px); }
+            left:calc(env(safe-area-inset-left,0px) + 16px); }
+    #btnM { top:calc(env(safe-area-inset-top,0px) + 72px);
+            left:calc(env(safe-area-inset-left,0px) + 16px); }
+    #btnHelp { top:calc(env(safe-area-inset-top,0px) + 128px);
+               left:calc(env(safe-area-inset-left,0px) + 16px); }
+    #btnW { left:calc(env(safe-area-inset-left,0px) + 16px); bottom:calc(env(safe-area-inset-bottom,0px) + 16px); }
+    #btnS { left:calc(env(safe-area-inset-left,0px) + 74px); bottom:calc(env(safe-area-inset-bottom,0px) + 16px); }
+    #btnA { right:calc(env(safe-area-inset-right,0px) + 74px); bottom:calc(env(safe-area-inset-bottom,0px) + 16px); }
+    #btnD { right:calc(env(safe-area-inset-right,0px) + 16px); bottom:calc(env(safe-area-inset-bottom,0px) + 16px); }
     #hud  { font-size:12px; line-height:1.6; padding:0 16px;
-            bottom:calc(env(safe-area-inset-bottom,0px) + 18px); }
+            top:calc(env(safe-area-inset-top,0px) + 14px); }
+    #help { left:calc(env(safe-area-inset-left,0px) + 16px);
+            top:calc(env(safe-area-inset-top,0px) + 184px); font-size:12px; }
   }
 </style>
 </head>
 <body>
 <canvas id="canvas" tabindex="-1" oncontextmenu="event.preventDefault()"></canvas>
 <div id="hud">
-  <b>DEMO</b> &nbsp;·&nbsp;
+  <b>DEMO</b><span id="hud-keys"> &nbsp;·&nbsp;
   <kbd>Q</kbd> raise / lower sails &nbsp;·&nbsp;
   <kbd>W</kbd>/<kbd>S</kbd> trim mainsail &nbsp;·&nbsp;
-  <kbd>A</kbd>/<kbd>D</kbd> turn
+  <kbd>A</kbd>/<kbd>D</kbd> turn &nbsp;·&nbsp;
+  <kbd>M</kbd> map</span>
+</div>
+<div id="help">
+  <div><kbd>Q</kbd> raise / lower sails</div>
+  <div><kbd>W</kbd>/<kbd>S</kbd> trim mainsail</div>
+  <div><kbd>A</kbd>/<kbd>D</kbd> turn</div>
+  <div><kbd>M</kbd> map</div>
 </div>
 <div class="btn" id="btnQ" data-key="q">Q</div>
+<div class="btn" id="btnM" data-key="m">M</div>
+<div class="btn" id="btnHelp" aria-label="Help">?</div>
 <div class="btn" id="btnW" data-key="w">W</div>
 <div class="btn" id="btnS" data-key="s">S</div>
 <div class="btn" id="btnA" data-key="a">A</div>
@@ -122,6 +151,15 @@
                 if (fsBtn) fsBtn.style.display = inFullscreen() ? "none" : "";
             });
         });
+    }
+    var helpBtn = document.getElementById("btnHelp");
+    var helpDiv = document.getElementById("help");
+    function toggleHelp(e) {
+        if (e) { e.preventDefault(); e.stopPropagation(); }
+        if (helpDiv) helpDiv.classList.toggle("show");
+    }
+    if (helpBtn) {
+        helpBtn.addEventListener("pointerdown", toggleHelp);
     }
     window.Module = {
         canvas: c,
@@ -203,7 +241,9 @@
     c.addEventListener("touchend",    pinchEnd);
     c.addEventListener("touchcancel", pinchEnd);
     document.querySelectorAll(".btn").forEach(function (b) {
-        var k = b.dataset.key, held = false;
+        var k = b.dataset.key;
+        if (!k) return;
+        var held = false;
         function down(e) { e.preventDefault(); if (held) return; held = true; b.classList.add("pressed"); send("keydown", k); }
         function up(e) { if (e) e.preventDefault(); if (!held) return; held = false; b.classList.remove("pressed"); send("keyup", k); }
         b.addEventListener("pointerdown", down);
