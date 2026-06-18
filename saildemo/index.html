@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>PhysicsSim</title>
+<style>
+  html,body { margin:0; padding:0; width:100%; height:100%; background:#000; overflow:hidden;
+              overscroll-behavior:none; touch-action:none; -webkit-touch-callout:none; }
+  #canvas { display:block; width:100vw; height:100vh;
+            width:100dvw; height:100dvh; outline:none; touch-action:none; }
+  #hud { position:fixed; bottom:14px; left:0; right:0; text-align:center;
+         font:14px/1.4 -apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif;
+         color:#fff; text-shadow:0 1px 3px rgba(0,0,0,.6); letter-spacing:.04em;
+         pointer-events:none; user-select:none;
+         white-space:nowrap; overflow:hidden; padding:0 10px; }
+  #hud b { letter-spacing:.12em; }
+  #hud kbd { display:inline-block; padding:1px 6px; margin:0 2px; border-radius:3px;
+             background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.25);
+             font:600 12px/1 ui-monospace,SFMono-Regular,Menlo,monospace; }
+  .btn { display:none; position:fixed; width:56px; height:56px; border-radius:8px;
+         background:rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.25);
+         color:#fff; font:600 22px/56px -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;
+         text-align:center; user-select:none; -webkit-user-select:none;
+         -webkit-tap-highlight-color:transparent; touch-action:none; cursor:pointer; }
+  .btn:active, .btn.pressed { background:rgba(255,255,255,.30); }
+  @media (hover: none) and (pointer: coarse) {
+    .btn  { display:block; background:rgba(255,255,255,.16); }
+    #btnQ { top:18px; right:18px; }
+    #btnW { left:18px; bottom:90px; }
+    #btnS { left:18px; bottom:18px; }
+    #btnA { right:90px; bottom:18px; }
+    #btnD { right:18px; bottom:18px; }
+    #btnFS { top:calc(env(safe-area-inset-top,0px) + 18px);
+             left:calc(env(safe-area-inset-left,0px) + 18px); }
+  }
+  @media (hover: none) and (pointer: coarse) and (orientation: portrait) {
+    .btn  { width:48px; height:48px; border-radius:9px;
+            font:600 18px/48px -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif; }
+    #btnQ { top:calc(env(safe-area-inset-top,0px) + 16px);
+            right:calc(env(safe-area-inset-right,0px) + 16px); }
+    #btnW { left:calc(env(safe-area-inset-left,0px) + 16px); bottom:calc(env(safe-area-inset-bottom,0px) + 108px); }
+    #btnS { left:calc(env(safe-area-inset-left,0px) + 16px); bottom:calc(env(safe-area-inset-bottom,0px) + 50px); }
+    #btnA { right:calc(env(safe-area-inset-right,0px) + 74px); bottom:calc(env(safe-area-inset-bottom,0px) + 50px); }
+    #btnD { right:calc(env(safe-area-inset-right,0px) + 16px); bottom:calc(env(safe-area-inset-bottom,0px) + 50px); }
+    #hud  { font-size:12px; line-height:1.6; padding:0 16px;
+            bottom:calc(env(safe-area-inset-bottom,0px) + 18px); }
+  }
+</style>
+</head>
+<body>
+<canvas id="canvas" tabindex="-1" oncontextmenu="event.preventDefault()"></canvas>
+<div id="hud">
+  <b>DEMO</b> &nbsp;·&nbsp;
+  <kbd>Q</kbd> raise / lower sails &nbsp;·&nbsp;
+  <kbd>W</kbd>/<kbd>S</kbd> trim mainsail &nbsp;·&nbsp;
+  <kbd>A</kbd>/<kbd>D</kbd> turn
+</div>
+<div class="btn" id="btnQ" data-key="q">Q</div>
+<div class="btn" id="btnW" data-key="w">W</div>
+<div class="btn" id="btnS" data-key="s">S</div>
+<div class="btn" id="btnA" data-key="a">A</div>
+<div class="btn" id="btnD" data-key="d">D</div>
+<div class="btn" id="btnFS" aria-label="Fullscreen">&#9974;</div>
+<script>
+(function () {
+    var c = document.getElementById("canvas");
+    function fit() {
+        var vv = window.visualViewport;
+        var dpr = Math.min(window.devicePixelRatio || 1, 2);
+        var w = Math.max(1, Math.round((vv ? vv.width  : window.innerWidth ) * dpr));
+        var h = Math.max(1, Math.round((vv ? vv.height : window.innerHeight) * dpr));
+        if (c.width  !== w) c.width  = w;
+        if (c.height !== h) c.height = h;
+        fitHud();
+    }
+    function fitHud() {
+        var hud = document.getElementById("hud");
+        if (!hud) return;
+        hud.style.fontSize = "";
+        var size = parseFloat(getComputedStyle(hud).fontSize) || 14;
+        while (size > 6 && hud.scrollWidth > hud.clientWidth + 1) {
+            size -= 0.5;
+            hud.style.fontSize = size + "px";
+        }
+    }
+    fit();
+    window.addEventListener("resize", fit);
+    window.addEventListener("orientationchange", function () { setTimeout(fit, 100); });
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener("resize", fit);
+        window.visualViewport.addEventListener("scroll", fit);
+    }
+    var isTouch = ("ontouchstart" in window) || navigator.maxTouchPoints > 0;
+    function inFullscreen() {
+        return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement);
+    }
+    function goFullscreen() {
+        if (inFullscreen()) return;
+        var el = document.documentElement;
+        var req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+        if (!req) return;
+        try {
+            var p = req.call(el);
+            if (p && typeof p.catch === "function") p.catch(function () {});
+        } catch (e) {}
+    }
+    if (isTouch) {
+        var fsBtn = document.getElementById("btnFS");
+        function onFsTap(e) { e.preventDefault(); e.stopPropagation(); goFullscreen(); }
+        if (fsBtn) {
+            fsBtn.addEventListener("pointerdown", onFsTap);
+            fsBtn.addEventListener("click",       onFsTap);
+            fsBtn.addEventListener("touchend",    onFsTap);
+        }
+        var fsEvs = ["fullscreenchange", "webkitfullscreenchange", "mozfullscreenchange"];
+        fsEvs.forEach(function (e) {
+            document.addEventListener(e, function () {
+                if (fsBtn) fsBtn.style.display = inFullscreen() ? "none" : "";
+            });
+        });
+    }
+    window.Module = {
+        canvas: c,
+        webglContextAttributes: { depth: true, stencil: true, alpha: false, antialias: false, preserveDrawingBuffer: false }
+    };
+    function send(type, key) {
+        var code = key.toUpperCase().charCodeAt(0);
+        var ev = new KeyboardEvent(type, {
+            key: key, code: "Key" + key.toUpperCase(),
+            keyCode: code, which: code, charCode: 0,
+            bubbles: true, cancelable: true
+        });
+        try { Object.defineProperty(ev, "keyCode", { get: function () { return code; } }); } catch (e) {}
+        try { Object.defineProperty(ev, "which", { get: function () { return code; } }); } catch (e) {}
+        (c || document).dispatchEvent(ev);
+        window.dispatchEvent(ev);
+    }
+    var pinchPrev = 0, midPrev = null, virtualX = 0, virtualY = 0;
+    function pinchDist(e) {
+        if (!e.touches || e.touches.length < 2) return 0;
+        var dx = e.touches[1].clientX - e.touches[0].clientX;
+        var dy = e.touches[1].clientY - e.touches[0].clientY;
+        return Math.hypot(dx, dy);
+    }
+    function pinchMid(e) {
+        if (!e.touches || e.touches.length < 2) return null;
+        return {
+            x: (e.touches[0].clientX + e.touches[1].clientX) * 0.5,
+            y: (e.touches[0].clientY + e.touches[1].clientY) * 0.5
+        };
+    }
+    function sendWheel(deltaY) {
+        c.dispatchEvent(new WheelEvent("wheel", {
+            deltaY: deltaY, deltaMode: 0, bubbles: true, cancelable: true
+        }));
+    }
+    function sendMouseMove(x, y) {
+        c.dispatchEvent(new MouseEvent("mousemove", {
+            clientX: x, clientY: y, bubbles: true, cancelable: true
+        }));
+    }
+    c.addEventListener("touchstart", function (e) {
+        if (e.touches.length >= 2) {
+            pinchPrev = pinchDist(e);
+            midPrev = pinchMid(e);
+            virtualX = e.touches[0].clientX;
+            virtualY = e.touches[0].clientY;
+            e.preventDefault();
+            e.stopImmediatePropagation();
+        }
+    }, { capture: true, passive: false });
+    c.addEventListener("touchmove", function (e) {
+        if (e.touches.length >= 2) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            var d = pinchDist(e);
+            var m = pinchMid(e);
+            if (pinchPrev > 0) {
+                var delta = d - pinchPrev;
+                if (Math.abs(delta) > 0.5) sendWheel(-delta * 20);
+            }
+            if (midPrev && m) {
+                virtualX += m.x - midPrev.x;
+                virtualY += m.y - midPrev.y;
+                sendMouseMove(virtualX, virtualY);
+            }
+            pinchPrev = d;
+            midPrev = m;
+        } else if (pinchPrev) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            pinchPrev = 0;
+            midPrev = null;
+        }
+    }, { capture: true, passive: false });
+    function pinchEnd(e) {
+        if (!e.touches || e.touches.length < 2) { pinchPrev = 0; midPrev = null; }
+    }
+    c.addEventListener("touchend",    pinchEnd);
+    c.addEventListener("touchcancel", pinchEnd);
+    document.querySelectorAll(".btn").forEach(function (b) {
+        var k = b.dataset.key, held = false;
+        function down(e) { e.preventDefault(); if (held) return; held = true; b.classList.add("pressed"); send("keydown", k); }
+        function up(e) { if (e) e.preventDefault(); if (!held) return; held = false; b.classList.remove("pressed"); send("keyup", k); }
+        b.addEventListener("pointerdown", down);
+        b.addEventListener("pointerup", up);
+        b.addEventListener("pointercancel", up);
+        b.addEventListener("pointerleave", up);
+    });
+})();
+</script>
+<script async src="physicssim.js"></script>
+</body>
+</html>
